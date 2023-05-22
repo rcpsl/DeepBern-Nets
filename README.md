@@ -22,7 +22,7 @@ There are 3 supported training modes:
 2.    Adversarial training mode (using PGD attacks)
 3.    Clean training mode
 
-The training mode can be specified by modifying the `TRAIN.MODE` parameter in the configuration file. To see examples of different training modes and their usage, refer to the sample configuration files located in the `configs` directory. The models are saved in the `experiments` folder which can be configure in the config file.
+The training mode can be specified by modifying the `TRAIN.MODE` parameter in the configuration file. To see examples of different training modes and their usage, refer to the sample configuration files located in the `configs` directory. The models are saved in the designated `experiments` folder, the location of which can be configured within the configuration file.
 
 
 
