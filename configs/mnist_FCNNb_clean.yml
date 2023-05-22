@@ -1,17 +1,17 @@
 TRAIN:
-  EPOCHS: 100
+  EPOCHS: 50
   BATCH_SIZE: 512
-  INIT_LR: 5e-3
-  WEIGHT_DECAY: 0.1
+  INIT_LR: 1e-2
+  WEIGHT_DECAY: 0.001
   OPTIMIZER: AdamW
   LR_DECAY_RATE: 0.99
   LR_DECAY_START_EPOCH: 50
   LR_DECAY_METHOD: EXP
-  DEVICE: cuda:5
-  MODE: adv
+  DEVICE: cuda:0
+  MODE: clean
 
 TEST:
-  BATCH_SIZE: 512
+  BATCH_SIZE: 256
   MODE: adv
   IBP: True
   BERN_IBP: True
@@ -25,21 +25,21 @@ ROBUSTNESS:
   MAX_ALPHA: 0.9
   MIN_BETA: 0.0
   MAX_BETA: 0.0
-  WARMUP_EPOCHS: 1
-  ROBUST_TRAINING_START_EPOCH: 5
+  WARMUP_EPOCHS: 0
+  ROBUST_TRAINING_START_EPOCH: 0
   ROBUST_TRAINING_LAST_EPOCH: 100
-  EPS_START_EPOCH: 5
-  EPS_LAST_EPOCH: 5
-  MAX_EPS: 0.02
-  MIN_EPS: 0.02
-  TEST_EPS: 0.02
+  EPS_START_EPOCH: 1
+  EPS_LAST_EPOCH: 1
+  MAX_EPS: 0.1
+  MIN_EPS: 0.1
+  TEST_EPS: 0.1
   TEST_EVERY_N_EPOCH : 1
 
 MODEL:
-  TYPE: CNNb
-  HIDDEN_LAYERS: ""
+  TYPE: FC
+  HIDDEN_LAYERS: [100,100,100]
   ACTIVATION: bern
-  DEGREE: 6
+  DEGREE: 8
   
 DATASET: mnist
 
@@ -49,7 +49,6 @@ CHECKPOINT:
   PATH_TO_CKPT: ""
 
 EXPERIMENT:
-  NAME: mnist_CNNb_0.02_adv_deg6
-  RUN_NAME: mnist_CNNb_0.02_adv
-  DESCRIPTION: Adversarial Robustness Benchmark for CNNb. Networks are trained using bern-IBP and verified on 100 test images"
-
+  NAME: mnist_FCNNb_10_clean
+  RUN_NAME: mnist_FCNNb_10_clean
+  DESCRIPTION: Training of FCNNb DeepBern-Nets on MNIST dataset. Clean training (without adversarial examples or certified training)"

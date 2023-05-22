@@ -4,7 +4,6 @@ import torch
 
 import os
 
-os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 import torchattacks
 
 # os.environ["CUDA_VISIBLE_DEVICES"]="7"
@@ -13,12 +12,10 @@ import torchvision.datasets as datasets
 import torch.optim as optim
 import torch.nn as nn
 from tqdm import tqdm
-from datasets import load_cifar10, load_mnist, load_tinyimagenet
-from auto_LiRPA import BoundedModule, BoundedTensor, PerturbationLpNorm
+from datasets import load_cifar10, load_mnist
+# from auto_LiRPA import BoundedModule, BoundedTensor, PerturbationLpNorm
 import numpy as np
-import sys
 import yaml
-from types import SimpleNamespace
 import mlflow
 from test import test_robust
 from utils import ParamScheduler, RecursiveNamespace
@@ -70,20 +67,20 @@ def compute_robust_loss(
         out_bounds = model.forward_subinterval(inf_ball, C=c)
         out_lb = out_bounds[..., 0]
         out_ub = out_bounds[..., 1]
-    elif bounding_method == "IBP" and lirpa_model is not None:
-        ptb = PerturbationLpNorm(norm=np.inf, x_L=in_lb, x_U=in_ub)
-        my_input = BoundedTensor(x, ptb)
-        out_lb, out_ub = lirpa_model.compute_bounds(x=(my_input,), C=c, method="IBP")
-    elif bounding_method == "bern-IBP":
-        inf_ball = torch.cat((in_lb.unsqueeze(-1), in_ub.unsqueeze(-1)), -1)
-        bern_out_bounds = model.forward_subinterval(inf_ball, C=c)
-        bern_out_lb = bern_out_bounds[..., 0]
-        ptb = PerturbationLpNorm(norm=np.inf, x_L=in_lb, x_U=in_ub)
-        my_input = BoundedTensor(x, ptb)
-        ibp_out_lb, out_ub = lirpa_model.compute_bounds(
-            x=(my_input,), C=c, method="IBP"
-        )
-        out_lb = beta * bern_out_lb + (1 - beta) * ibp_out_lb
+    # elif bounding_method == "IBP" and lirpa_model is not None:
+    #     ptb = PerturbationLpNorm(norm=np.inf, x_L=in_lb, x_U=in_ub)
+    #     my_input = BoundedTensor(x, ptb)
+    #     out_lb, out_ub = lirpa_model.compute_bounds(x=(my_input,), C=c, method="IBP")
+    # elif bounding_method == "bern-IBP":
+    #     inf_ball = torch.cat((in_lb.unsqueeze(-1), in_ub.unsqueeze(-1)), -1)
+    #     bern_out_bounds = model.forward_subinterval(inf_ball, C=c)
+    #     bern_out_lb = bern_out_bounds[..., 0]
+    #     ptb = PerturbationLpNorm(norm=np.inf, x_L=in_lb, x_U=in_ub)
+    #     my_input = BoundedTensor(x, ptb)
+    #     ibp_out_lb, out_ub = lirpa_model.compute_bounds(
+    #         x=(my_input,), C=c, method="IBP"
+    #     )
+    #     out_lb = beta * bern_out_lb + (1 - beta) * ibp_out_lb
     else:
         raise Exception(
             "Error in Bounding Method. For IBP you have to provide a LIRPA model"
@@ -273,17 +270,18 @@ def train(
         print(
             f"Epoch ({epoch+1}/ {epochs}): Training loss = {epoch_loss}, Robust loss = {epoch_robust_loss}, lr = {optimizer.param_groups[0]['lr']}, Alpha = {alpha:.4f}, Beta = {beta:.4f}, Eps = {eps:.4f}"
         )
-        mlflow.log_metrics(
-            {"lr": optimizer.param_groups[0]["lr"], "Alpha": alpha, "Eps": eps},
-            step=epoch + 1,
-        )
-        mlflow.log_metrics(
-            {
-                "Training loss": epoch_loss.item(),
-                "Robust loss": epoch_robust_loss.item(),
-            },
-            step=epoch + 1,
-        )
+        if mlflow_enable:
+            mlflow.log_metrics(
+                {"lr": optimizer.param_groups[0]["lr"], "Alpha": alpha, "Eps": eps},
+                step=epoch + 1,
+            )
+            mlflow.log_metrics(
+                {
+                    "Training loss": epoch_loss.item(),
+                    "Robust loss": epoch_robust_loss.item(),
+                },
+                step=epoch + 1,
+            )
 
         total_weights_norm = 0
         with torch.no_grad():
@@ -328,13 +326,14 @@ def train(
                             eps=test_eps,
                             mode='ibp' if cfg.MODEL.ACTIVATION == 'relu' else 'bern',
                         )
-                    mlflow.log_metrics(
-                        {
-                            "Test Accuracy": test_acc.item(),
-                            "Certified Accuracy": cert_acc,
-                        },
-                        step=epoch + 1,
-                    )
+                    if mlflow_enable:
+                        mlflow.log_metrics(
+                            {
+                                "Test Accuracy": test_acc.item(),
+                                "Certified Accuracy": cert_acc,
+                            },
+                            step=epoch + 1,
+                        )
                     if cert_acc >= best_model_acc:
                         best_model_acc = cert_acc
                         torch.save(
@@ -346,10 +345,11 @@ def train(
                             },
                             f"{cfg.BASE_DIR}/checkpoint_best_model.pth",
                         )
-                        mlflow.log_artifact(f"{cfg.BASE_DIR}/checkpoint_best_model.pth")
-                        mlflow.log_metric(
-                            "Max Certified Accuracy", best_model_acc, step=epoch + 1
-                        )
+                        if mlflow_enable:
+                            mlflow.log_artifact(f"{cfg.BASE_DIR}/checkpoint_best_model.pth")
+                            mlflow.log_metric(
+                                "Max Certified Accuracy", best_model_acc, step=epoch + 1
+                            )
 
                 # correct_cnt = 0
                 # total_cnt = 0
@@ -379,8 +379,9 @@ def train(
         epoch_times.append(epoch_time)
     epoch_times = np.array(epoch_times)
     print(f"Average epoch time: {epoch_times.mean():.2f} s +-{epoch_times.std():.2f} s")
-    mlflow.log_metric("Average epoch time", epoch_times.mean(), step=epoch + 1)
-    mlflow.log_metric("Std epoch time", epoch_times.std(), step=epoch + 1)
+    if mlflow_enable:
+        mlflow.log_metric("Average epoch time", epoch_times.mean(), step=epoch + 1)
+        mlflow.log_metric("Std epoch time", epoch_times.std(), step=epoch + 1)
 
 
 
@@ -397,6 +398,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--epochs", type=int, help="Number of epochs to train the model for"
+    )
+    parser.add_argument(
+        "--mlflow", type=int, help="Enables mlflow experiment tracking" ,action=argparse.BooleanOptionalAction
     )
     args = parser.parse_args()
 
@@ -415,22 +419,24 @@ if __name__ == "__main__":
         cfg.TRAIN.EPOCHS = args.epochs
     degree = cfg.MODEL.DEGREE
     device = cfg.TRAIN.DEVICE
+    mlflow_enable = args.mlflow
     # CONFIG = {'checkpoint_path' : "cifar_BN"}
     BASE_DIR = os.path.join(
         cfg.CHECKPOINT.DIR, cfg.EXPERIMENT.NAME, cfg.EXPERIMENT.RUN_NAME
     )
-    exp = mlflow.get_experiment_by_name(name=cfg.EXPERIMENT.NAME)
-    if not exp:
-        exp_id = mlflow.create_experiment(cfg.EXPERIMENT.NAME)
-    else:
-        exp_id = exp.experiment_id
+    if mlflow_enable:
+        exp = mlflow.get_experiment_by_name(name=cfg.EXPERIMENT.NAME)
+        if not exp:
+            exp_id = mlflow.create_experiment(cfg.EXPERIMENT.NAME)
+        else:
+            exp_id = exp.experiment_id
 
-    run = mlflow.start_run(
-        run_name=cfg.EXPERIMENT.NAME + "/" + cfg.EXPERIMENT.RUN_NAME,
-        experiment_id=exp_id,
-    )
-    mlflow.log_artifact(yaml_cfg_f)
-    mlflow.log_params(cfg.cfg_dict)
+        run = mlflow.start_run(
+            run_name=cfg.EXPERIMENT.NAME + "/" + cfg.EXPERIMENT.RUN_NAME,
+            experiment_id=exp_id,
+        )
+        mlflow.log_artifact(yaml_cfg_f)
+        mlflow.log_params(cfg.cfg_dict)
     cfg.BASE_DIR = BASE_DIR
     os.makedirs(BASE_DIR, exist_ok=True)
     # batch_size = 512
@@ -441,21 +447,19 @@ if __name__ == "__main__":
             batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model
         )
         _, benchmark_testloader = load_cifar10(
-            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model, samples_dist=100
+            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model
         )
     elif cfg.DATASET == "mnist":
         trainloader, testloader = load_mnist(
             batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model
         )
         _, benchmark_testloader = load_mnist(
-            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model, samples_dist=100
-        )
-    elif cfg.DATASET == "tinyimagenet":
-        trainloader, testloader = load_tinyimagenet(
             batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model
         )
-        benchmark_testloader = None
-        
+
+    print("==>>> Trainig set size = {}".format(len(trainloader.dataset)))
+    print("==>>> Test set size = {}".format(len(testloader.dataset)))
+    print("==>>> Robustness Test set size = {}".format(len(benchmark_testloader.dataset)))
 
     in_shape = torch.tensor(next(iter(trainloader))[0][0].shape)
     num_outs = len(trainloader.dataset.classes)
@@ -498,12 +502,12 @@ if __name__ == "__main__":
             device
         )
 
-
     print(model)
     init_lr = float(cfg.TRAIN.INIT_LR)
     w_decay = float(cfg.TRAIN.WEIGHT_DECAY)
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    mlflow.log_param("Number of Parameters", num_params)
+    if mlflow_enable:
+        mlflow.log_param("Number of Parameters", num_params)
     print("Parameters:", num_params)
     optim_params = get_param_groups(model,cfg)
     if cfg.TRAIN.OPTIMIZER == "AdamW":
@@ -534,11 +538,11 @@ if __name__ == "__main__":
 
     bounding_method = cfg.ROBUSTNESS.BOUNDING_METHOD
     lirpa_model = None
-    if "IBP" in bounding_method:
-        model.eval()
-        dummy_input = next(iter(trainloader))[0]
-        lirpa_model = BoundedModule(model, dummy_input)
-        model.train()
+    # if "IBP" in bounding_method:
+    #     model.eval()
+    #     dummy_input = next(iter(trainloader))[0]
+    #     lirpa_model = BoundedModule(model, dummy_input)
+    #     model.train()
 
     criterion = nn.CrossEntropyLoss()
     train(

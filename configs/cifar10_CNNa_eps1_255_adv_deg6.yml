@@ -1,6 +1,6 @@
 TRAIN:
   EPOCHS: 50
-  BATCH_SIZE: 256
+  BATCH_SIZE: 512
   INIT_LR: 5e-4
   WEIGHT_DECAY: 0.0001
   OPTIMIZER: Adam
@@ -30,16 +30,16 @@ ROBUSTNESS:
   ROBUST_TRAINING_LAST_EPOCH: 100
   EPS_START_EPOCH: 10
   EPS_LAST_EPOCH: 10
-  MAX_EPS: 0.007843137255
-  MIN_EPS: 0.007843137255
-  TEST_EPS: 0.007843137255
+  MAX_EPS: 0.003921568627
+  MIN_EPS: 0.003921568627
+  TEST_EPS: 0.003921568627
   TEST_EVERY_N_EPOCH : 1
 
 MODEL:
-  TYPE: CNNc
+  TYPE: CNNa
   HIDDEN_LAYERS: ""
   ACTIVATION: bern
-  DEGREE: 2
+  DEGREE: 6
   
 DATASET: cifar10
 
@@ -49,7 +49,6 @@ CHECKPOINT:
   PATH_TO_CKPT: ""
 
 EXPERIMENT:
-  NAME: cifar10_CNNc_2/255_adv_deg4
-  RUN_NAME: cifar10_robustness_eps_2/255_adv_deg4
-  DESCRIPTION: "Adversarial Robustness Benchmark for FCCNA. Networks are trained using bern-IBP and verified on 100 test images"
-
+  NAME: cifar10_CNNa_1/255_adv_deg6
+  RUN_NAME: cifar10_robustness_eps_1/255_adv_deg6
+  DESCRIPTION: "Adversarial Robustness Benchmark for CNNa. Networks are trained using PGD and verified on the full test set"
