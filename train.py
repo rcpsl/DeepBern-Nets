@@ -20,6 +20,7 @@ import yaml
 import mlflow
 from test import test_robust
 from utils import ParamScheduler, RecursiveNamespace
+
 torch.manual_seed(123123)
 
 
@@ -511,8 +512,8 @@ if __name__ == "__main__":
         # Load model
         if cfg.CHECKPOINT.PATH_TO_CKPT:
             ckpt = torch.load(cfg.CHECKPOINT.PATH_TO_CKPT)
-            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-            start_epoch = ckpt['epoch']
+            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            start_epoch = ckpt["epoch"]
         else:
             ckpt = torch.load(f"{BASE_DIR}/checkpoint_best_model.pth")
             # optimizer.load_state_dict(ckpt['optimizer_state_dict'])
