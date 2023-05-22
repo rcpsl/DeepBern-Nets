@@ -1,0 +1,40 @@
+TRAIN:
+  EPOCHS: 200
+  BATCH_SIZE: 512
+  INIT_LR: 1e-2
+  WEIGHT_DECAY: 0.001
+  OPTIMIZER: AdamW
+  LR_DECAY_RATE: 0.99
+  LR_DECAY_METHOD: EXP
+  DEVICE: cuda:6
+
+ROBUSTNESS:
+  ENABLE: True
+  BOUNDING_METHOD: bern
+  MIN_ALPHA: 0.0
+  MAX_ALPHA: 0.7
+  MIN_BETA: 0.0
+  MAX_BETA: 0.85
+  ROBUST_TRAINING_START_EPOCH: 5
+  ROBUST_TRAINING_LAST_EPOCH: 150
+  EPS: 0.00784313725490196
+
+MODEL:
+  TYPE: FC
+  HIDDEN_LAYERS: [20,20]
+  ACTIVATION: bern
+  DEGREE: 3
+  
+DATASET: cifar10
+
+CHECKPOINT:
+  DIR: experiments/cifar10/
+  LOAD: False
+  PATH_TO_CKPT: ""
+
+EXPERIMENT:
+  NAME: cifar10_FCCNa_2/255
+  RUN_NAME: cifar10_robustness_eps_2/255
+  DESCRIPTION: "Adversarial Robustness Benchmark for FCCNA. Networks are trained using bern-IBP and verified on 100 test images"
+
+

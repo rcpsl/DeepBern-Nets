@@ -1,0 +1,54 @@
+TRAIN:
+  EPOCHS: 200
+  BATCH_SIZE: 512
+  INIT_LR: 5e-2
+  WEIGHT_DECAY: 0.05
+  OPTIMIZER: AdamW
+  LR_DECAY_RATE: 0.99
+  LR_DECAY_START_EPOCH: 50
+  LR_DECAY_METHOD: EXP
+  DEVICE: cuda:2
+  MODE: cert
+
+TEST:
+  BATCH_SIZE: 256
+  MODE: adv
+  IBP: True
+  BERN_IBP: True
+  PGD: True
+  DEVICE: cuda:0
+
+ROBUSTNESS:
+  ENABLE: True
+  BOUNDING_METHOD: bern
+  MIN_ALPHA: 0.0
+  MAX_ALPHA: 0.9
+  MIN_BETA: 0.0
+  MAX_BETA: 0.0
+  WARMUP_EPOCHS: 0
+  ROBUST_TRAINING_START_EPOCH: 0
+  ROBUST_TRAINING_LAST_EPOCH: 100
+  EPS_START_EPOCH: 1
+  EPS_LAST_EPOCH: 1
+  MAX_EPS: 0.1
+  MIN_EPS: 0.1
+  TEST_EPS: 0.1
+  TEST_EVERY_N_EPOCH : 1
+
+MODEL:
+  TYPE: CNNa
+  HIDDEN_LAYERS: ""
+  ACTIVATION: bern
+  DEGREE: 6
+  
+DATASET: mnist
+
+CHECKPOINT:
+  DIR: experiments/mnist/
+  LOAD: False
+  PATH_TO_CKPT: ""
+
+EXPERIMENT:
+  NAME: mnist_CNNa_0.1
+  RUN_NAME: mnist_CNNa_0.1
+  DESCRIPTION: Adversarial Robustness Benchmark for CNNa. Networks are trained using bern-IBP and verified on 100 test images"

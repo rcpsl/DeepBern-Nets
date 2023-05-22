@@ -1,0 +1,54 @@
+TRAIN:
+  EPOCHS: 200
+  BATCH_SIZE: 512
+  INIT_LR: 5e-3
+  WEIGHT_DECAY: 0.01
+  OPTIMIZER: AdamW
+  LR_DECAY_RATE: 0.999
+  LR_DECAY_START_EPOCH: 50
+  LR_DECAY_METHOD: EXP
+  DEVICE: cuda:4
+  MODE: cert
+
+TEST:
+  BATCH_SIZE: 512
+  MODE: adv
+  IBP: True
+  BERN_IBP: True
+  PGD: True
+  DEVICE: cuda:0
+
+ROBUSTNESS:
+  ENABLE: True
+  BOUNDING_METHOD: bern
+  MIN_ALPHA: 0.0
+  MAX_ALPHA: 0.9
+  MIN_BETA: 0.0
+  MAX_BETA: 0.0
+  WARMUP_EPOCHS: 5
+  ROBUST_TRAINING_START_EPOCH: 5
+  ROBUST_TRAINING_LAST_EPOCH: 150
+  EPS_START_EPOCH: 5
+  EPS_LAST_EPOCH: 80
+  MAX_EPS: 0.3
+  MIN_EPS: 0.1
+  TEST_EPS: 0.3
+  TEST_EVERY_N_EPOCH : 1
+
+MODEL:
+  TYPE: CNNb
+  HIDDEN_LAYERS: ""
+  ACTIVATION: bern
+  DEGREE: 4
+  
+DATASET: mnist
+
+CHECKPOINT:
+  DIR: experiments/mnist/
+  LOAD: False
+  PATH_TO_CKPT: "/home/hkhedr/Haitham/projects/dev/BerNN/mlruns/857505103343574420/97f07a58a9d34162aa677140ee7979b4/artifacts/checkpoint_best_model.pth"
+
+EXPERIMENT:
+  NAME: mnist_CNNb_0.3
+  RUN_NAME: mnist_CNNb_0.3
+  DESCRIPTION: Adversarial Robustness Benchmark for CNNb. Networks are trained using bern-IBP and verified on 100 test images"

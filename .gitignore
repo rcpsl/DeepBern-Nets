@@ -1,0 +1,6 @@
+*.pyc
+data
+checkpoints*
+mlruns*
+experiments*
+.vscode
