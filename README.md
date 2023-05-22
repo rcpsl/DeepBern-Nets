@@ -2,7 +2,7 @@
 DeepBern-Nets is class of Neural Networks with Bernstein Polynomial based activation functions. Bernstein polynomials exhibit several key properties that allows tight computation of output bounds of all neurons in the network making them highly amenable to certification tasks. More details can be found in the paper [DeepBern-Nets: Taming the Complexity of Certifying Neural Networks using Bernstein Polynomial Activations and Precise Bound Propagation](arxiv).
 
 # Installation
-We recommend using the provided conda environment file to install all dependencies. To create a conda environment, run
+We recommend using the provided [conda](https://docs.conda.io/en/latest/miniconda.html) environment file to install all dependencies. To create a conda environment, run
 
 ```
 conda env create --name deepbern --file=environment.yml
