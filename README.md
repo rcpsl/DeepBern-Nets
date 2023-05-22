@@ -12,7 +12,7 @@ conda activate deepbern
 Make sure the environment was created without errors.
 
 # Training 
-The main training file is `train.py` which accepts a `YAMLe` configuration file. For example, to run the code using one of the example configs, run
+The main training file is `train.py` which accepts a `YAML` configuration file. For example, to run the code using one of the example configs, run
 
 `python train.py configs/mnist_FCNNb_clean.yml`
 
