@@ -2,6 +2,7 @@ import argparse
 import torch
 import sys
 from time import perf_counter
+
 # sys.path = ['/home/hkhedr/Haitham/projects/dev/test_autolirpa/auto_LiRPA'] + sys.path
 
 # from auto_LiRPA import BoundedModule, BoundedTensor, PerturbationLpNorm
@@ -125,10 +126,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--device", type=str, default="cuda", help="Device to use for training"
     )
-    parser.add_argument(
-        "--eps", type=float, help="Epsilon for PGD attack"
-    )
-
+    parser.add_argument("--eps", type=float, help="Epsilon for PGD attack")
 
     args = parser.parse_args()
     # assert len(sys.argv) == 2, "Please provide a YAML configuration file as argument"
@@ -145,11 +143,11 @@ if __name__ == "__main__":
     is_FC_model = cfg.MODEL.TYPE == "FC"
     if cfg.DATASET == "cifar10":
         trainloader, testloader = load_cifar10(
-            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model,samples_dist=100
+            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model, samples_dist=100
         )
     elif cfg.DATASET == "mnist":
         trainloader, testloader = load_mnist(
-            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model,samples_dist=1
+            batch_size=cfg.TRAIN.BATCH_SIZE, flatten=is_FC_model, samples_dist=1
         )
 
     num_outs = len(trainloader.dataset.classes)

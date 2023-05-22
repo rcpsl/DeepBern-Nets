@@ -13,6 +13,7 @@ import torch.optim as optim
 import torch.nn as nn
 from tqdm import tqdm
 from datasets import load_cifar10, load_mnist
+
 # from auto_LiRPA import BoundedModule, BoundedTensor, PerturbationLpNorm
 import numpy as np
 import yaml
@@ -24,6 +25,7 @@ from utils import ParamScheduler, RecursiveNamespace
 # torch.use_deterministic_algorithms(True)
 # torch.autograd.set_detect_anomaly(True)
 torch.manual_seed(123123)
+
 
 def get_param_groups(model, cfg):
     # create 2 parameter groups, one for Bernstein layers and one for others
@@ -41,6 +43,8 @@ def get_param_groups(model, cfg):
         {"params": other_params, "weight_decay": cfg.TRAIN.WEIGHT_DECAY},
     ]
     return param_groups
+
+
 def itr_merge(*itrs):
     for itr in itrs:
         for v in itr:
@@ -54,7 +58,14 @@ def update_shared_buffers(model, lirpa_model):
 
 
 def compute_robust_loss(
-    model, x, y, eps=None, beta=1, lirpa_model=None, bounding_method="bern", num_class = 10
+    model,
+    x,
+    y,
+    eps=None,
+    beta=1,
+    lirpa_model=None,
+    bounding_method="bern",
+    num_class=10,
 ):
     if eps is None:
         return 0.0
@@ -205,7 +216,7 @@ def train(
     # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max= epochs - lr_decay_start_epoch)
     # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose= True)
     # iteration = 0
-    #init forward pass
+    # init forward pass
     with torch.no_grad():
         dummy = model(next(iter(trainloader))[0].to(device))
     num_class = dummy.shape[-1]
@@ -249,7 +260,7 @@ def train(
                     beta=beta,
                     lirpa_model=lirpa_model,
                     bounding_method=bounding_method,
-                    num_class = num_class
+                    num_class=num_class,
                 )
             else:
                 robust_loss = torch.tensor(0)
@@ -265,7 +276,6 @@ def train(
             with torch.no_grad():
                 model(x[0:1])  # Dummy forward to update bounds
 
-        
         epoch_e_time = time.perf_counter()
         print(
             f"Epoch ({epoch+1}/ {epochs}): Training loss = {epoch_loss}, Robust loss = {epoch_robust_loss}, lr = {optimizer.param_groups[0]['lr']}, Alpha = {alpha:.4f}, Beta = {beta:.4f}, Eps = {eps:.4f}"
@@ -316,7 +326,11 @@ def train(
                 if (epoch + 1) % cfg.ROBUSTNESS.TEST_EVERY_N_EPOCH == 0:
                     # torch.cuda.empty_cache()
                     test_acc, cert_acc = test_robust(
-                model, testloader, device=device, eps=test_eps, mode='ibp' if cfg.MODEL.ACTIVATION == 'relu' else 'bern'
+                        model,
+                        testloader,
+                        device=device,
+                        eps=test_eps,
+                        mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
                     )
                     if benchmark_loader is not None:
                         _, cert_acc = test_robust(
@@ -324,7 +338,7 @@ def train(
                             benchmark_loader,
                             device=device,
                             eps=test_eps,
-                            mode='ibp' if cfg.MODEL.ACTIVATION == 'relu' else 'bern',
+                            mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
                         )
                     if mlflow_enable:
                         mlflow.log_metrics(
@@ -346,7 +360,9 @@ def train(
                             f"{cfg.BASE_DIR}/checkpoint_best_model.pth",
                         )
                         if mlflow_enable:
-                            mlflow.log_artifact(f"{cfg.BASE_DIR}/checkpoint_best_model.pth")
+                            mlflow.log_artifact(
+                                f"{cfg.BASE_DIR}/checkpoint_best_model.pth"
+                            )
                             mlflow.log_metric(
                                 "Max Certified Accuracy", best_model_acc, step=epoch + 1
                             )
@@ -384,7 +400,6 @@ def train(
         mlflow.log_metric("Std epoch time", epoch_times.std(), step=epoch + 1)
 
 
-
 if __name__ == "__main__":
     # num_inputs = 784
     # num_outs = 10
@@ -393,14 +408,15 @@ if __name__ == "__main__":
     parser.add_argument(
         "--device", type=str, default="cuda", help="Device to use for training"
     )
-    parser.add_argument(
-        "--degree", type=int, help="Degree of the Bernstein polynomial"
-    )
+    parser.add_argument("--degree", type=int, help="Degree of the Bernstein polynomial")
     parser.add_argument(
         "--epochs", type=int, help="Number of epochs to train the model for"
     )
     parser.add_argument(
-        "--mlflow", type=int, help="Enables mlflow experiment tracking" ,action=argparse.BooleanOptionalAction
+        "--mlflow",
+        type=int,
+        help="Enables mlflow experiment tracking",
+        action=argparse.BooleanOptionalAction,
     )
     args = parser.parse_args()
 
@@ -411,10 +427,10 @@ if __name__ == "__main__":
     # overwrite device in cfg if provided as argument
     if args.device:
         cfg.TRAIN.DEVICE = args.device
-    #overwrite degree in cfg if provided as argument
+    # overwrite degree in cfg if provided as argument
     if args.degree:
         cfg.MODEL.DEGREE = args.degree
-    #overwrite epochs in cfg if provided as argument
+    # overwrite epochs in cfg if provided as argument
     if args.epochs:
         cfg.TRAIN.EPOCHS = args.epochs
     degree = cfg.MODEL.DEGREE
@@ -459,7 +475,9 @@ if __name__ == "__main__":
 
     print("==>>> Trainig set size = {}".format(len(trainloader.dataset)))
     print("==>>> Test set size = {}".format(len(testloader.dataset)))
-    print("==>>> Robustness Test set size = {}".format(len(benchmark_testloader.dataset)))
+    print(
+        "==>>> Robustness Test set size = {}".format(len(benchmark_testloader.dataset))
+    )
 
     in_shape = torch.tensor(next(iter(trainloader))[0][0].shape)
     num_outs = len(trainloader.dataset.classes)
@@ -479,28 +497,30 @@ if __name__ == "__main__":
         in_bounds = torch.concat(
             (torch.zeros(*in_shape, 1), torch.ones(*in_shape, 1)), dim=-1
         ).to(device)
-        model = CNNa(degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs = num_outs).to(
-            device
-        )
+        model = CNNa(
+            degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs=num_outs
+        ).to(device)
     elif cfg.MODEL.TYPE == "CNNb":
         in_bounds = torch.concat(
             (torch.zeros(*in_shape, 1), torch.ones(*in_shape, 1)), dim=-1
         ).to(device)
-        model = CNNb(degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs = num_outs).to(device)
+        model = CNNb(
+            degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs=num_outs
+        ).to(device)
     elif cfg.MODEL.TYPE == "CNNc":
         in_bounds = torch.concat(
             (torch.zeros(*in_shape, 1), torch.ones(*in_shape, 1)), dim=-1
         ).to(device)
-        model = CNNc(degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs = num_outs).to(
-            device
-        )
+        model = CNNc(
+            degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs=num_outs
+        ).to(device)
     elif cfg.MODEL.TYPE == "CNN7":
         in_bounds = torch.concat(
             (torch.zeros(*in_shape, 1), torch.ones(*in_shape, 1)), dim=-1
         ).to(device)
-        model = CNN7(degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs = num_outs).to(
-            device
-        )
+        model = CNN7(
+            degree, input_bounds=in_bounds, act=cfg.MODEL.ACTIVATION, num_outs=num_outs
+        ).to(device)
 
     print(model)
     init_lr = float(cfg.TRAIN.INIT_LR)
@@ -509,19 +529,13 @@ if __name__ == "__main__":
     if mlflow_enable:
         mlflow.log_param("Number of Parameters", num_params)
     print("Parameters:", num_params)
-    optim_params = get_param_groups(model,cfg)
+    optim_params = get_param_groups(model, cfg)
     if cfg.TRAIN.OPTIMIZER == "AdamW":
-        optimizer = optim.AdamW(
-            optim_params, lr=init_lr, weight_decay=w_decay
-        )
+        optimizer = optim.AdamW(optim_params, lr=init_lr, weight_decay=w_decay)
     elif cfg.TRAIN.OPTIMIZER == "Adam":
-        optimizer = optim.Adam(
-            optim_params, lr=init_lr, weight_decay=w_decay
-        )
+        optimizer = optim.Adam(optim_params, lr=init_lr, weight_decay=w_decay)
     else:
-        optimizer = optim.SGD(
-            optim_params, lr=init_lr, weight_decay=w_decay
-        )
+        optimizer = optim.SGD(optim_params, lr=init_lr, weight_decay=w_decay)
 
     start_epoch = 0
     if cfg.CHECKPOINT.LOAD:

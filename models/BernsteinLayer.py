@@ -23,12 +23,9 @@ class BernsteinLayer(nn.Module):
 
     @property
     def bern_bounds(self):
-
         lb, _ = self.bern_coeffs.min(axis=-1, keepdim=True)
         ub, _ = self.bern_coeffs.max(axis=-1, keepdim=True)
-        return torch.concat(
-            (lb, ub), dim=-1
-        ) 
+        return torch.concat((lb, ub), dim=-1)
 
     def subinterval_bounds(self, bounds):
         """Compute Bernstein coeffs for interval [alpha,beta]"""
@@ -100,7 +97,9 @@ class BernsteinLayer(nn.Module):
                 torch.sum(basis, axis=-1).sum(), basis_shape[:-1].prod().float()
             )
             if not basis_sum_to_one:
-                raise Exception(f"Basis doesn't sum to 1, {torch.sum(basis,axis = -1).sum()}")
+                raise Exception(
+                    f"Basis doesn't sum to 1, {torch.sum(basis,axis = -1).sum()}"
+                )
         out = basis * self.bern_coeffs
         out = out.sum(axis=-1)
         return out

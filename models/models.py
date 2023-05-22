@@ -34,6 +34,7 @@ class FCModel(nn.Module):
         self.input_bounds = input_bounds
         self.net = nn.Sequential(*layers)
         self.layers = layers
+
     def forward_with_bounds(self, x):
         y = x
         prev_bounds = self.input_bounds
@@ -44,8 +45,16 @@ class FCModel(nn.Module):
                     b = layer.bias
                     W_pos = F.relu(W)
                     W_neg = -F.relu(-W)
-                    lb = W_pos @ prev_bounds[..., 0].T + W_neg @ prev_bounds[..., 1].T + b
-                    ub = W_pos @ prev_bounds[..., 1].T + W_neg @ prev_bounds[..., 0].T + b
+                    lb = (
+                        W_pos @ prev_bounds[..., 0].T
+                        + W_neg @ prev_bounds[..., 1].T
+                        + b
+                    )
+                    ub = (
+                        W_pos @ prev_bounds[..., 1].T
+                        + W_neg @ prev_bounds[..., 0].T
+                        + b
+                    )
                     prev_bounds = torch.stack((lb, ub), dim=-1)
                 y = layer(y)
 
@@ -158,8 +167,9 @@ class FCModel(nn.Module):
                 y = self.net(x)
         return y
 
+
 class CNNa(nn.Module):
-    def __init__(self, degree, act="bern", input_bounds=None, num_outs = 10):
+    def __init__(self, degree, act="bern", input_bounds=None, num_outs=10):
         super().__init__()
         self.input_bounds = input_bounds
         in_shape = torch.tensor(input_bounds.shape)[:-1]
@@ -282,8 +292,9 @@ class CNNa(nn.Module):
             y = self.net(x)
         return y
 
+
 class CNN7(nn.Module):
-    def __init__(self, degree, act="bern", input_bounds=None, num_outs = 10):
+    def __init__(self, degree, act="bern", input_bounds=None, num_outs=10):
         super().__init__()
         BATCH_NORM = False
         self.input_bounds = input_bounds
@@ -360,7 +371,6 @@ class CNN7(nn.Module):
         with torch.no_grad():
             prev_bounds = self.input_bounds
         for i, layer in enumerate(self.net):
-           
             if isinstance(layer, nn.Linear):
                 y = layer(y)
                 with torch.no_grad():
@@ -368,10 +378,17 @@ class CNN7(nn.Module):
                     b = layer.bias
                     W_pos = F.relu(W)
                     W_neg = -F.relu(-W)
-                    lb = W_pos @ prev_bounds[..., 0].T + W_neg @ prev_bounds[..., 1].T + b
-                    ub = W_pos @ prev_bounds[..., 1].T + W_neg @ prev_bounds[..., 0].T + b
+                    lb = (
+                        W_pos @ prev_bounds[..., 0].T
+                        + W_neg @ prev_bounds[..., 1].T
+                        + b
+                    )
+                    ub = (
+                        W_pos @ prev_bounds[..., 1].T
+                        + W_neg @ prev_bounds[..., 0].T
+                        + b
+                    )
                     prev_bounds = torch.stack((lb, ub), dim=-1)
-                
 
             elif isinstance(layer, ConvLayer):
                 y = layer(y)
@@ -384,10 +401,16 @@ class CNN7(nn.Module):
                     layer(y)
                     mean = layer.running_mean
                     var = layer.running_var
-                    lb = (prev_bounds[..., 0] - mean.reshape(1, -1, 1, 1)) / torch.sqrt(var + 1e-5).reshape(1, -1, 1, 1)
-                    ub = (prev_bounds[..., 1] - mean.unsqueeze(-1).unsqueeze(-1)) / torch.sqrt(var + 1e-5).reshape(1, -1, 1, 1)
+                    lb = (prev_bounds[..., 0] - mean.reshape(1, -1, 1, 1)) / torch.sqrt(
+                        var + 1e-5
+                    ).reshape(1, -1, 1, 1)
+                    ub = (
+                        prev_bounds[..., 1] - mean.unsqueeze(-1).unsqueeze(-1)
+                    ) / torch.sqrt(var + 1e-5).reshape(1, -1, 1, 1)
                     prev_bounds = torch.stack((lb, ub), dim=-1).squeeze()
-                y = (y - mean.reshape(1, -1, 1, 1)) / torch.sqrt(var + 1e-5).reshape(1, -1, 1, 1)
+                y = (y - mean.reshape(1, -1, 1, 1)) / torch.sqrt(var + 1e-5).reshape(
+                    1, -1, 1, 1
+                )
             elif isinstance(layer, nn.Flatten):
                 y = layer(y)
                 with torch.no_grad():
@@ -451,17 +474,17 @@ class CNN7(nn.Module):
                 prev_bounds = layer.forward_interval(prev_bounds)
 
             elif isinstance(layer, nn.BatchNorm2d):
-                    lb = F.batch_norm(
-                        prev_bounds[..., 0].unsqueeze(0),
-                        layer.running_mean,
-                        layer.running_var,
-                    )
-                    ub = F.batch_norm(
-                        prev_bounds[..., 1].unsqueeze(0),
-                        layer.running_mean,
-                        layer.running_var,
-                    )
-                    prev_bounds = torch.concat((lb.T, ub.T), dim=-1)
+                lb = F.batch_norm(
+                    prev_bounds[..., 0].unsqueeze(0),
+                    layer.running_mean,
+                    layer.running_var,
+                )
+                ub = F.batch_norm(
+                    prev_bounds[..., 1].unsqueeze(0),
+                    layer.running_mean,
+                    layer.running_var,
+                )
+                prev_bounds = torch.concat((lb.T, ub.T), dim=-1)
 
             elif isinstance(layer, nn.Flatten):
                 prev_bounds = prev_bounds.reshape(B, -1, 2)
@@ -476,10 +499,11 @@ class CNN7(nn.Module):
             y = self.forward_with_bounds(x)
         else:
             y = self.net(x)
-        return y    
+        return y
+
 
 class CNNb(nn.Module):
-    def __init__(self, degree, act="bern", input_bounds=None, num_outs = 10):
+    def __init__(self, degree, act="bern", input_bounds=None, num_outs=10):
         super().__init__()
         self.input_bounds = input_bounds
         in_shape = torch.tensor(input_bounds.shape)[:-1]
@@ -625,7 +649,7 @@ class CNNb(nn.Module):
 
 
 class CNNc(nn.Module):
-    def __init__(self, degree, act="bern", input_bounds=None, num_outs = 10):
+    def __init__(self, degree, act="bern", input_bounds=None, num_outs=10):
         super().__init__()
         self.input_bounds = input_bounds
         in_shape = torch.tensor(input_bounds.shape)[:-1]
