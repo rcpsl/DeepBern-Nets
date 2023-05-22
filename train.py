@@ -20,10 +20,6 @@ import yaml
 import mlflow
 from test import test_robust
 from utils import ParamScheduler, RecursiveNamespace
-
-# torch.backends.cudnn.deterministic = True
-# torch.use_deterministic_algorithms(True)
-# torch.autograd.set_detect_anomaly(True)
 torch.manual_seed(123123)
 
 
@@ -117,11 +113,6 @@ def compute_robust_loss(
             size=(out_lb.size(0),), dtype=torch.int64, device=out_lb.device
         )
 
-    # logits = (target_lb.sum(axis = -1).unsqueeze(-1) - nontarget_ub)
-    # logits -= 2 * target_lb
-    # diff_target_lb_and_other_ub = target_lb.unsqueeze(1) - bern_bounds[:,1]
-    # diff_target_lb_and_other_ub[:,y] = 0 # remove target loss
-    # r_loss = diff.sum(-1).mean()
     r_loss = nn.CrossEntropyLoss()(logits, labels)
     return r_loss
 
@@ -213,9 +204,6 @@ def train(
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer=optimizer, gamma=decayRate
     )
-    # lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max= epochs - lr_decay_start_epoch)
-    # lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', verbose= True)
-    # iteration = 0
     # init forward pass
     with torch.no_grad():
         dummy = model(next(iter(trainloader))[0].to(device))
@@ -228,8 +216,6 @@ def train(
         with torch.no_grad():
             beta = 0
             alpha = 1.0
-            # alpha = compute_alpha(min_alpha, epoch, epochs, max_alpha = max_alpha, start_epoch = cfg.ROBUSTNESS.ROBUST_TRAINING_START_EPOCH, last_epoch = cfg.ROBUSTNESS.ROBUST_TRAINING_LAST_EPOCH)
-
             if epoch >= cfg.ROBUSTNESS.WARMUP_EPOCHS and cfg.ROBUSTNESS.ENABLE:
                 alpha = alpha_scheduler.step(epoch)
                 if "IBP" in bounding_method:
@@ -240,8 +226,6 @@ def train(
 
         if cfg.TRAIN.MODE == "adv":
             adversary = torchattacks.PGD(model, eps, alpha=eps / 50, steps=10)
-            # adversary = torchattacks.FGSM(model, eps)
-            # adversary.set_model_training_mode(model_training=True)
         for batch_idx, (x, y) in enumerate(tqdm(trainloader)):
             optimizer.zero_grad()
             x = x.to(device)
@@ -366,21 +350,6 @@ def train(
                             mlflow.log_metric(
                                 "Max Certified Accuracy", best_model_acc, step=epoch + 1
                             )
-
-                # correct_cnt = 0
-                # total_cnt = 0
-                # total_loss = 0
-                # with torch.no_grad():
-                #     for batch_idx, (x, target) in enumerate(tqdm(testloader)):
-                #         x, target = x.to(device), target.to(device)
-                #         out = model(x)
-                #         _, pred_label = torch.max(out.data, 1)
-                #         total_cnt += x.shape[0]
-                #         correct_cnt += (pred_label == target.data).sum()
-
-                #     model_acc = correct_cnt * 100/ total_cnt
-                #     print(f"Test accuracy: {model_acc} %")
-
         if (epoch + 1) % 10 == 0 or (epoch + 1) == epochs:
             torch.save(
                 {
@@ -542,8 +511,8 @@ if __name__ == "__main__":
         # Load model
         if cfg.CHECKPOINT.PATH_TO_CKPT:
             ckpt = torch.load(cfg.CHECKPOINT.PATH_TO_CKPT)
-            # optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-            # start_epoch = ckpt['epoch']
+            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
+            start_epoch = ckpt['epoch']
         else:
             ckpt = torch.load(f"{BASE_DIR}/checkpoint_best_model.pth")
             # optimizer.load_state_dict(ckpt['optimizer_state_dict'])
