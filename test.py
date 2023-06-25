@@ -91,7 +91,7 @@ def test_robust(model, testloader, device="cuda", eps=0.0, mode="ibp", verbose=T
                 #     lb, ub = my_model.compute_bounds(x=(my_input,), C=c, method="IBP")
                 #     robust_cnt = torch.sum((lb >= 0).all(dim=1)).item()
 
-        elif mode == "adv":
+        elif mode == "pgd":
             alpha = eps / 50
             with torch.enable_grad():
                 adversary = torchattacks.PGD(my_model, eps=eps, alpha=alpha, steps=100)
@@ -110,7 +110,7 @@ def test_robust(model, testloader, device="cuda", eps=0.0, mode="ibp", verbose=T
     if verbose:
         print(f"Test accuracy: {model_acc}% ({correct_cnt} / {total_cnt})")
         print(
-            f"Certified accuracy (eps = {eps}): {cert_acc}% ({cert_cnt} / {total_cnt})"
+            f"Certified accuracy (method={mode},eps = {eps}): {cert_acc}% ({cert_cnt} / {total_cnt})"
         )
     return model_acc, cert_acc
 
@@ -222,7 +222,7 @@ if __name__ == "__main__":
         if cfg.TEST.PGD:
             print("======== PGD verification ========")
             pgd_test_acc, pgd_cert_acc = test_robust(
-                model, testloader, eps=eps, mode="adv", device=device, verbose=False
+                model, testloader, eps=eps, mode="pgd", device=device, verbose=False
             )
             print(f"Test accuracy: {pgd_test_acc}%")
             print(f"Certified accuracy (eps = {eps}): {pgd_cert_acc}%")
