@@ -315,7 +315,7 @@ def train(
                         testloader,
                         device=device,
                         eps=test_eps,
-                        mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
+                        mode=cfg.TRAIN.MODE,
                     )
                     if benchmark_loader is not None:
                         _, cert_acc = test_robust(
@@ -323,7 +323,7 @@ def train(
                             benchmark_loader,
                             device=device,
                             eps=test_eps,
-                            mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
+                            mode=cfg.TRAIN.MODE,
                         )
                     if mlflow_enable:
                         mlflow.log_metrics(
