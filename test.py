@@ -93,9 +93,10 @@ def test_robust(model, testloader, device="cuda", eps=0.0, mode="ibp", verbose=T
 
         elif mode == "pgd":
             alpha = eps / 50
-            adversary = torchattacks.PGD(my_model, eps=eps, alpha=alpha, steps=100)
-            x_perturbed = adversary(x, target)
-            out = my_model(x_perturbed)
+            with torch.enable_grad():
+                adversary = torchattacks.PGD(my_model, eps=eps, alpha=alpha, steps=100)
+                x_perturbed = adversary(x, target)
+                out = my_model(x_perturbed)
             _, pred_label = torch.max(out.data, 1)
             robust_cnt = (pred_label == target.data).sum().item()
         else:
@@ -109,7 +110,7 @@ def test_robust(model, testloader, device="cuda", eps=0.0, mode="ibp", verbose=T
     if verbose:
         print(f"Test accuracy: {model_acc}% ({correct_cnt} / {total_cnt})")
         print(
-            f"Certified accuracy (eps = {eps}): {cert_acc}% ({cert_cnt} / {total_cnt})"
+            f"Certified accuracy (method={mode},eps = {eps}): {cert_acc}% ({cert_cnt} / {total_cnt})"
         )
     return model_acc, cert_acc
 

@@ -310,12 +310,14 @@ def train(
                 # testing
                 if (epoch + 1) % cfg.ROBUSTNESS.TEST_EVERY_N_EPOCH == 0:
                     # torch.cuda.empty_cache()
+                    if(cfg.MODEL.ACTIVATION == 'relu' and cfg.ROBUSTNESS.BOUNDING_METHOD == 'bern'):
+                        raise Exception("Relu activation is not supported with bern bounding method")
                     test_acc, cert_acc = test_robust(
                         model,
                         testloader,
                         device=device,
                         eps=test_eps,
-                        mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
+                        mode=cfg.ROBUSTNESS.BOUNDING_METHOD,
                     )
                     if benchmark_loader is not None:
                         _, cert_acc = test_robust(
@@ -323,7 +325,7 @@ def train(
                             benchmark_loader,
                             device=device,
                             eps=test_eps,
-                            mode="ibp" if cfg.MODEL.ACTIVATION == "relu" else "bern",
+                            mode=cfg.ROBUSTNESS.BOUNDING_METHOD,
                         )
                     if mlflow_enable:
                         mlflow.log_metrics(
